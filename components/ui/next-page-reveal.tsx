@@ -31,8 +31,9 @@ const DECAY_MS = 700;
  *
  * Once it is fully open the page has no scroll left, so further wheel and touch
  * deltas are doing nothing anyway. Those are counted — passively, never
- * preventDefault'd — and a deliberate push past the threshold navigates. The
- * panel is also an ordinary link, so nobody has to discover the gesture.
+ * preventDefault'd — and a deliberate push past the threshold arms the
+ * navigation, which is then performed by the gesture ending. The panel is also
+ * an ordinary link, so nobody has to discover the gesture.
  */
 export function NextPageReveal({ href, label, eyebrow = "Next" }: NextPageRevealProps) {
   const wrapperRef = React.useRef<HTMLDivElement>(null);
@@ -79,8 +80,50 @@ export function NextPageReveal({ href, label, eyebrow = "Next" }: NextPageReveal
       if (!frame) frame = requestAnimationFrame(measure);
     };
 
+    // Crossing the threshold arms the navigation rather than performing it.
+    //
+    // The gesture that crosses it is still running: on a phone the finger is
+    // still on the glass, on a trackpad the inertial wheel events are still
+    // arriving. Navigating on that instant hands whatever is left of the
+    // gesture to the next page — which, unlike this one, has somewhere to go.
+    // The reader lands at the top of it and is carried straight to the bottom,
+    // arriving at the end of a page they have not read yet. Waiting for the
+    // gesture to finish costs a moment nobody sees, because by then the panel
+    // is open and filling the screen.
+    //
+    // A gesture is over when the finger comes off the glass, or — for a wheel,
+    // which has no such signal — when its thinning stream of events stops.
+    // There is deliberately no timeout backstop on top of those two: any
+    // ceiling short enough to be useful is also short enough to fire in the
+    // middle of a long trackpad fling, which is the very thing being avoided.
+    // A finger resting on the screen simply holds the open panel until it lifts.
+    let touching = false;
+    let armed = false;
+    let quiet = 0;
+
+    const commit = () => {
+      if (navigatedRef.current) return;
+      navigatedRef.current = true;
+      window.clearTimeout(quiet);
+      track("next_page_revealed", { destination: href, method: "scroll" });
+      router.push(href);
+    };
+
+    const bumpLull = () => {
+      window.clearTimeout(quiet);
+      // A finger on the glass means the gesture is not over, however still it
+      // is holding; only lifting it ends that one.
+      if (touching) return;
+      quiet = window.setTimeout(commit, 160);
+    };
+
     const advance = (delta: number) => {
-      if (!readyRef.current || navigatedRef.current) return;
+      if (navigatedRef.current) return;
+      if (armed) {
+        bumpLull(); // still moving, so the gesture is still going
+        return;
+      }
+      if (!readyRef.current) return;
       // The site menu can be open over a page that is already scrolled to the
       // bottom. Scrolling then belongs to the menu, not to the curtain — without
       // this, dismissing it with a scroll would fling the reader to the next page.
@@ -90,9 +133,8 @@ export function NextPageReveal({ href, label, eyebrow = "Next" }: NextPageReveal
       // reader who changes their mind is not left hovering near the trigger.
       setPush(pushRef.current + (delta > 0 ? delta : delta * 2));
       if (pushRef.current >= THRESHOLD) {
-        navigatedRef.current = true;
-        track("next_page_revealed", { destination: href, method: "scroll" });
-        router.push(href);
+        armed = true;
+        bumpLull();
         return;
       }
       decay = window.setTimeout(() => setPush(0), DECAY_MS);
@@ -102,12 +144,17 @@ export function NextPageReveal({ href, label, eyebrow = "Next" }: NextPageReveal
 
     let touchY = 0;
     const onTouchStart = (e: TouchEvent) => {
+      touching = true;
       touchY = e.touches[0].clientY;
     };
     const onTouchMove = (e: TouchEvent) => {
       const y = e.touches[0].clientY;
       advance((touchY - y) * 2); // touch deltas are far smaller than wheel ones
       touchY = y;
+    };
+    const onTouchEnd = () => {
+      touching = false;
+      if (armed) commit();
     };
 
     measure();
@@ -116,6 +163,8 @@ export function NextPageReveal({ href, label, eyebrow = "Next" }: NextPageReveal
     window.addEventListener("wheel", onWheel, { passive: true });
     window.addEventListener("touchstart", onTouchStart, { passive: true });
     window.addEventListener("touchmove", onTouchMove, { passive: true });
+    window.addEventListener("touchend", onTouchEnd, { passive: true });
+    window.addEventListener("touchcancel", onTouchEnd, { passive: true });
 
     return () => {
       window.removeEventListener("scroll", onScroll);
@@ -123,8 +172,13 @@ export function NextPageReveal({ href, label, eyebrow = "Next" }: NextPageReveal
       window.removeEventListener("wheel", onWheel);
       window.removeEventListener("touchstart", onTouchStart);
       window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("touchend", onTouchEnd);
+      window.removeEventListener("touchcancel", onTouchEnd);
       if (frame) cancelAnimationFrame(frame);
       window.clearTimeout(decay);
+      // An armed gesture that never completed must not fire into a page the
+      // reader has since left by some other route.
+      window.clearTimeout(quiet);
     };
   }, [href, router]);
 
