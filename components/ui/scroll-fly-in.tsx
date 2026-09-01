@@ -128,13 +128,13 @@ const ScrollFlyIn = React.forwardRef<HTMLDivElement, ScrollFlyInProps>(
     }, [restRight, FADE_IN, FLIGHT]);
 
     return (
-      <div ref={targetRef} className={cn("relative h-[200vh]", className)} {...props}>
+      <div ref={targetRef} className={cn("relative h-[200svh]", className)} {...props}>
         {/* overflow-hidden clips the flyer to the viewport. Without it, an
             element wider than the screen translated past the edge forces a
             horizontal scrollbar on the whole page. */}
         <div
           ref={ref}
-          className="sticky top-0 flex h-screen items-center justify-center overflow-hidden"
+          className="sticky top-0 flex h-svh items-center justify-center overflow-hidden"
         >
           <div className="z-10 text-center">{children}</div>
 

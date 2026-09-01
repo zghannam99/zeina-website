@@ -131,11 +131,11 @@ export function NextPageReveal({ href, label, eyebrow = "Next" }: NextPageReveal
   return (
     <div
       ref={wrapperRef}
-      className="relative h-screen w-full"
+      className="relative h-svh w-full"
       // The clip is what makes this work — see the note above.
       style={{ clipPath: "polygon(0 0, 100% 0, 100% 100%, 0 100%)" }}
     >
-      <div className="fixed bottom-0 left-0 h-screen w-full border-t border-[#e7ded2] bg-[#f7f3ee]">
+      <div className="fixed inset-0 border-t border-[#e7ded2] bg-[#f7f3ee]">
         <Link
           href={href}
           onClick={() => track("next_page_revealed", { destination: href, method: "click" })}

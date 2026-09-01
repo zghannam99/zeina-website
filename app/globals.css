@@ -60,9 +60,15 @@
 }
 
 html {
-  /* The hero owns the wheel while it's forming; this stops the
-     browser's rubber-band from fighting it at the top of the page. */
+  /* On desktop the hero owns the wheel while it's forming, and this stops the
+     browser's rubber-band from fighting it at the top of the page. On a phone
+     it does a second job: the hero's first screen is now ordinary scrolling,
+     so without this a downward flick there would trigger pull-to-refresh. */
   overscroll-behavior-y: none;
+  /* iOS inflates font sizes in landscape unless told not to, which reflows a
+     page whose sections are sized against the viewport. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {

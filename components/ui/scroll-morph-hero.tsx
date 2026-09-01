@@ -345,6 +345,10 @@ export default function IntroAnimation() {
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
   const [reducedMotion, setReducedMotion] = useState(false);
   const [flippable, setFlippable] = useState(false);
+  // No fine pointer means no wheel to borrow — the morph is driven off the
+  // page's own scroll instead. See the two effects further down.
+  const [touch, setTouch] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const virtualScroll = useMotionValue(0);
@@ -358,6 +362,7 @@ export default function IntroAnimation() {
     const apply = () => {
       setReducedMotion(mq.matches);
       setFlippable(hoverMq.matches);
+      setTouch(!hoverMq.matches);
     };
     apply();
     mq.addEventListener("change", apply);
@@ -413,7 +418,15 @@ export default function IntroAnimation() {
     []
   );
 
-  // --- Trap-then-release scroll ---
+  // --- Driving the morph ---
+  // Two mechanisms, because the two input devices are not the same thing. A
+  // wheel is a stream of deltas the page can borrow and hand back. A finger IS
+  // the scroll, and taking it away costs the compositor fast path, the momentum
+  // fling, and — on iOS — the remainder of the gesture, since a touchmove that
+  // has been preventDefault'd will not start scrolling again until the finger
+  // lifts. That is what made the phone feel like it was catching on something.
+
+  // --- Desktop: trap the wheel, then release ---
   // While the page is at the very top we own the wheel and drive the morph.
   // Once the sequence completes we stop calling preventDefault, so the very
   // same gesture carries on into the rest of the page. Scrolling back to the
@@ -423,6 +436,7 @@ export default function IntroAnimation() {
       setVirtual(RELEASE_AT);
       return;
     }
+    if (touch) return; // the scroll-driven effect below owns it
 
     /** Takes as much of `delta` as the hero still needs and hands the rest to
      *  the page in the same gesture. Returns true if we consumed any of it.
@@ -456,27 +470,48 @@ export default function IntroAnimation() {
       if (consume(e.deltaY)) e.preventDefault();
     };
 
-    let touchStartY = 0;
-    const handleTouchStart = (e: TouchEvent) => {
-      touchStartY = e.touches[0].clientY;
-    };
-    const handleTouchMove = (e: TouchEvent) => {
-      const touchY = e.touches[0].clientY;
-      const deltaY = touchStartY - touchY;
-      touchStartY = touchY;
-      if (consume(deltaY * 2.2)) e.preventDefault(); // touch deltas are small
-    };
-
     window.addEventListener("wheel", handleWheel, { passive: false });
-    window.addEventListener("touchstart", handleTouchStart, { passive: true });
-    window.addEventListener("touchmove", handleTouchMove, { passive: false });
+    return () => window.removeEventListener("wheel", handleWheel);
+  }, [reducedMotion, touch, setVirtual]);
 
-    return () => {
-      window.removeEventListener("wheel", handleWheel);
-      window.removeEventListener("touchstart", handleTouchStart);
-      window.removeEventListener("touchmove", handleTouchMove);
+  // --- Touch: let the browser scroll, and read the morph off where it got to ---
+  // The hero is simply a section twice the height of the screen with a sticky
+  // panel inside it, so the spare height IS the morph's track. Nothing is
+  // preventDefault'd and not one touch listener is registered, which means the
+  // page scrolls on the browser's own fast path — momentum, rubber-band and all
+  // — and the arc forms as part of that single flick instead of fighting it.
+  useEffect(() => {
+    if (reducedMotion || !touch) return;
+    const wrapper = wrapperRef.current;
+    const panel = containerRef.current;
+    if (!wrapper || !panel) return;
+
+    let frame = 0;
+    const measure = () => {
+      frame = 0;
+      // How far the page scrolls before the sticky panel starts to leave.
+      const travel = wrapper.offsetHeight - panel.offsetHeight;
+      if (travel <= 0) return;
+      const progress = clamp(-wrapper.getBoundingClientRect().top / travel, 0, 1);
+      // Written straight through rather than via setVirtual: we are already
+      // inside a rAF, and bouncing off a second one would put the cards a frame
+      // behind the finger.
+      scrollRef.current = progress * RELEASE_AT;
+      virtualScroll.set(scrollRef.current);
     };
-  }, [reducedMotion, setVirtual]);
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(measure);
+    };
+
+    measure();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }, [reducedMotion, touch, virtualScroll]);
 
   // 0 → circle, 1 → arc. Mapped straight off the wheel with no spring, so the
   // cards stop the instant the scroll does.
@@ -555,63 +590,80 @@ export default function IntroAnimation() {
 
   return (
     <div
-      ref={containerRef}
-      // No background colour of its own: it matched the body exactly, so it was
-      // invisible on its own terms and only served to hide whatever sat behind —
-      // which is now the bubble layer.
-      className="relative h-screen w-full overflow-hidden"
+      ref={wrapperRef}
+      // On touch this is taller than the screen and the panel below sticks to
+      // the top of it: the spare height is the scroll track the morph is read
+      // from. On desktop the wheel is trapped instead, so one screen is all it
+      // needs.
+      //
+      // svh, not vh: iOS grows and shrinks the viewport as its toolbars
+      // collapse, and a hero measured in vh re-measures and re-lays-out all
+      // twelve cards in the middle of a scroll. svh is the one that holds still.
+      className={touch ? "relative h-[200svh] w-full" : "relative h-svh w-full"}
     >
       <div
-        className="flex h-full w-full flex-col items-center justify-center"
-        style={{ perspective: "1000px" }}
+        ref={containerRef}
+        // No background colour of its own: it matched the body exactly, so it was
+        // invisible on its own terms and only served to hide whatever sat behind —
+        // which is now the bubble layer.
+        className={
+          touch
+            ? "sticky top-0 h-svh w-full overflow-hidden"
+            : "relative h-full w-full overflow-hidden"
+        }
       >
-        {/* Intro copy — fades out as the arc forms */}
-        <div className="pointer-events-none absolute top-1/2 z-0 flex -translate-y-1/2 flex-col items-center justify-center text-center">
-          <motion.h1
-            style={{ opacity: headlineOpacity, filter: headlineBlur }}
-            className="text-2xl font-normal tracking-tight text-[#2b2622] md:text-4xl"
-          >
-            See how I{" "}
-            {/* Loop starts once the cards have settled into the circle. */}
-            <HandDrawnCircle
-              active={ready}
-              delay={LOOP_DELAY}
-              instant={reducedMotion}
-              stroke="#b60d06"
-            >
-              <span className="font-medium">think</span>
-            </HandDrawnCircle>
-          </motion.h1>
-          <motion.p
-            style={{ opacity: cueOpacity }}
-            className="mt-5 rounded-full bg-[rgba(182,13,6,0.07)] px-4 py-[7px] text-[11px] font-medium tracking-[0.2em] text-[#b60d06]"
-          >
-            SCROLL TO EXPLORE
-          </motion.p>
-        </div>
-
-        {/* Cards. The mouse parallax rides on this wrapper — one transform for
-            the whole fan, rather than the same offset added to each card. */}
-        <motion.div
-          style={{ x: parallaxX }}
-          className="relative flex h-full w-full items-center justify-center"
+        <div
+          className="flex h-full w-full flex-col items-center justify-center"
+          style={{ perspective: "1000px" }}
         >
-          {HERO_IMAGES.map((card, i) => (
-            <FlipCard
-              key={i}
-              card={card}
-              index={i}
-              ready={ready}
-              layout={cardLayouts[i]}
-              arc={arc}
-              scatter={scatterPositions[i]}
-              introT={introT}
-              morph={morph}
-              shuffle={shuffle}
-              flippable={flippable}
-            />
-          ))}
-        </motion.div>
+          {/* Intro copy — fades out as the arc forms */}
+          <div className="pointer-events-none absolute top-1/2 z-0 flex -translate-y-1/2 flex-col items-center justify-center text-center">
+            <motion.h1
+              style={{ opacity: headlineOpacity, filter: headlineBlur }}
+              className="text-2xl font-normal tracking-tight text-[#2b2622] md:text-4xl"
+            >
+              See how I{" "}
+              {/* Loop starts once the cards have settled into the circle. */}
+              <HandDrawnCircle
+                active={ready}
+                delay={LOOP_DELAY}
+                instant={reducedMotion}
+                stroke="#b60d06"
+              >
+                <span className="font-medium">think</span>
+              </HandDrawnCircle>
+            </motion.h1>
+            <motion.p
+              style={{ opacity: cueOpacity }}
+              className="mt-5 rounded-full bg-[rgba(182,13,6,0.07)] px-4 py-[7px] text-[11px] font-medium tracking-[0.2em] text-[#b60d06]"
+            >
+              SCROLL TO EXPLORE
+            </motion.p>
+          </div>
+
+          {/* Cards. The mouse parallax rides on this wrapper — one transform for
+              the whole fan, rather than the same offset added to each card. */}
+          <motion.div
+            style={{ x: parallaxX }}
+            className="relative flex h-full w-full items-center justify-center"
+          >
+            {HERO_IMAGES.map((card, i) => (
+              <FlipCard
+                key={i}
+                card={card}
+                index={i}
+                ready={ready}
+                layout={cardLayouts[i]}
+                arc={arc}
+                scatter={scatterPositions[i]}
+                introT={introT}
+                morph={morph}
+                shuffle={shuffle}
+                flippable={flippable}
+              />
+            ))}
+          </motion.div>
+        </div>
       </div>
     </div>
   );

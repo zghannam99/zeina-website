@@ -105,7 +105,7 @@ export function LedgerCardRow({ float = true }: LedgerCardRowProps) {
   return (
     // Generous padding and no overflow clipping anywhere above the cards, so the
     // numerals and the lifted state are never cut off.
-    <section className="flex min-h-screen items-center justify-center px-6 py-14">
+    <section className="flex min-h-svh items-center justify-center px-6 py-14">
       {/* The spec's 20px gap sits the cards very close. Widened so each card's
           numeral and its lifted state have clear air around them — at the large
           breakpoint the numeral alone hangs ~21px past the card's left edge,
