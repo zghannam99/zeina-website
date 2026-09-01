@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+import { BubbleBackground } from "@/components/ui/bubble-background";
 import { track } from "@/lib/analytics";
 
 interface NextPageRevealProps {
@@ -185,15 +186,29 @@ export function NextPageReveal({ href, label, eyebrow = "Next" }: NextPageReveal
   return (
     <div
       ref={wrapperRef}
-      className="relative h-svh w-full"
+      // lvh, not svh, and not vh either. This box has to reach the top of the
+      // screen for the panel to count as open, and at the foot of the document
+      // its top sits at exactly (viewport height − its own height). Sized in
+      // svh that is a positive number for as long as iOS keeps its toolbars
+      // collapsed, so the curtain could not finish until the chrome happened to
+      // snap back — which is the jump. lvh is never shorter than the viewport,
+      // so the test passes in either state, and unlike dvh it does not resize
+      // mid-scroll while the toolbars animate.
+      className="relative h-lvh w-full"
       // The clip is what makes this work — see the note above.
       style={{ clipPath: "polygon(0 0, 100% 0, 100% 100%, 0 100%)" }}
     >
-      <div className="fixed inset-0 border-t border-[#e7ded2] bg-[#f7f3ee]">
+      <div className="fixed inset-0 overflow-hidden border-t border-[#e7ded2] bg-[#f7f3ee]">
+        {/* The panel reads as the next page lying under this one, so it carries
+            the same drifting bubbles every page has. Without them it was a flat
+            cream slab between two pages that both breathe, which is the moment
+            the illusion broke. Not `interactive`: the pointer bubble mounts its
+            own viewport-fixed layer, which has no business inside a curtain. */}
+        <BubbleBackground />
         <Link
           href={href}
           onClick={() => track("next_page_revealed", { destination: href, method: "click" })}
-          className="group flex h-full w-full flex-col items-center justify-center gap-5 px-6 text-center"
+          className="group relative z-10 flex h-full w-full flex-col items-center justify-center gap-5 px-6 text-center"
         >
           <span className="font-mono text-[10px] font-medium tracking-[0.24em] text-[#8a8179] uppercase">
             {eyebrow}
