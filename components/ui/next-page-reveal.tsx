@@ -16,37 +16,43 @@ interface NextPageRevealProps {
   eyebrow?: string;
 }
 
-/** Extra downward scrolling, in px, required once the panel is fully open. */
-const THRESHOLD = 420;
-/** How long a pause before the gesture is forgotten. */
-const DECAY_MS = 700;
+/** Quiet time, in ms, that stands for "the scrolling has stopped". */
+const SETTLE_MS = 140;
+/** Pixels of the track given up to rounding — see the note in `measure`. */
+const SLACK = 2;
+
+const clamp01 = (n: number) => (n < 0 ? 0 : n > 1 ? 1 : n);
 
 /**
  * A curtain that uncovers the next page as the reader reaches the bottom.
  *
- * The mechanic is entirely CSS. This wrapper sits in normal flow at the end of
+ * The reveal is entirely CSS. This wrapper sits in normal flow at the end of
  * the page and carries a `clip-path`, which clips its whole subtree — including
  * position:fixed descendants — without becoming their containing block. So the
  * panel inside stays pinned to the viewport while the window it is seen through
  * grows, and it reads as the next page lying underneath this one.
  *
- * Once it is fully open the page has no scroll left, so further wheel and touch
- * deltas are doing nothing anyway. Those are counted — passively, never
- * preventDefault'd — and a deliberate push past the threshold arms the
- * navigation, which is then performed by the gesture ending. The panel is also
- * an ordinary link, so nobody has to discover the gesture.
+ * The wrapper is 175lvh: the first screen of that uncovers the panel, and the
+ * remaining 75 is the curtain's own scroll track — real page scrolling, with
+ * somewhere to actually go, which the progress bar simply reports. Everything
+ * follows from that. The bar moves with the scroll because it *is* the scroll
+ * position; it holds still when the reader holds still, because a position does
+ * not decay; and it reaches the end exactly as the document does.
+ *
+ * This replaced a version that counted wheel and touch deltas *past* the end of
+ * the page. On a trackpad that reads fine, which is why it survived. On a phone
+ * it never could: with the rubber-band suppressed there is no scrolling left to
+ * measure, so the bar was being driven by raw finger deltas against a page that
+ * was not moving, and a pause wiped the progress rather than holding it.
  */
 export function NextPageReveal({ href, label, eyebrow = "Next" }: NextPageRevealProps) {
   const wrapperRef = React.useRef<HTMLDivElement>(null);
+  const barRef = React.useRef<HTMLDivElement>(null);
   const router = useRouter();
 
+  // The one piece of state worth re-rendering for: it flips once.
   const [ready, setReady] = React.useState(false);
-  const [progress, setProgress] = React.useState(0);
-
-  // Mirrored in refs because the listeners below are registered once and would
-  // otherwise close over the first render's values.
   const readyRef = React.useRef(false);
-  const pushRef = React.useRef(0);
   const navigatedRef = React.useRef(false);
 
   React.useEffect(() => {
@@ -54,104 +60,77 @@ export function NextPageReveal({ href, label, eyebrow = "Next" }: NextPageReveal
     if (!el) return;
 
     let frame = 0;
-    let decay = 0;
-
-    const setPush = (value: number) => {
-      pushRef.current = Math.min(THRESHOLD, Math.max(0, value));
-      setProgress(pushRef.current / THRESHOLD);
-    };
-
-    const measure = () => {
-      frame = 0;
-      const rect = el.getBoundingClientRect();
-      const atBottom =
-        window.innerHeight + window.scrollY >=
-        document.documentElement.scrollHeight - 2;
-      // The panel is fully uncovered once the curtain's top edge reaches the
-      // top of the screen and there is no page left to scroll.
-      const full = rect.top <= 1 && atBottom;
-      if (full !== readyRef.current) {
-        readyRef.current = full;
-        setReady(full);
-        if (!full) setPush(0);
-      }
-    };
-
-    const onScroll = () => {
-      if (!frame) frame = requestAnimationFrame(measure);
-    };
-
-    // Crossing the threshold arms the navigation rather than performing it.
-    //
-    // The gesture that crosses it is still running: on a phone the finger is
-    // still on the glass, on a trackpad the inertial wheel events are still
-    // arriving. Navigating on that instant hands whatever is left of the
-    // gesture to the next page — which, unlike this one, has somewhere to go.
-    // The reader lands at the top of it and is carried straight to the bottom,
-    // arriving at the end of a page they have not read yet. Waiting for the
-    // gesture to finish costs a moment nobody sees, because by then the panel
-    // is open and filling the screen.
-    //
-    // A gesture is over when the finger comes off the glass, or — for a wheel,
-    // which has no such signal — when its thinning stream of events stops.
-    // There is deliberately no timeout backstop on top of those two: any
-    // ceiling short enough to be useful is also short enough to fire in the
-    // middle of a long trackpad fling, which is the very thing being avoided.
-    // A finger resting on the screen simply holds the open panel until it lifts.
     let touching = false;
     let armed = false;
     let quiet = 0;
 
     const commit = () => {
       if (navigatedRef.current) return;
+      // The site menu can be open over a page that is already at its end.
+      // Scrolling then belongs to the menu, not to the curtain — without this,
+      // dismissing it with a scroll would carry the reader onward.
+      if (document.querySelector('[aria-modal="true"]')) return;
       navigatedRef.current = true;
       window.clearTimeout(quiet);
       track("next_page_revealed", { destination: href, method: "scroll" });
       router.push(href);
     };
 
-    const bumpLull = () => {
+    /** Hands over once the gesture behind the scroll has finished, never in the
+     *  middle of one. The next page, unlike this one, has somewhere to scroll:
+     *  navigate while a finger is still travelling and the rest of that gesture
+     *  is spent on the new page, dropping the reader at the end of something
+     *  they have not read. A finger still down waits for touchend; anything
+     *  else waits for the scrolling to go quiet. */
+    const settle = () => {
       window.clearTimeout(quiet);
-      // A finger on the glass means the gesture is not over, however still it
-      // is holding; only lifting it ends that one.
       if (touching) return;
-      quiet = window.setTimeout(commit, 160);
+      quiet = window.setTimeout(commit, SETTLE_MS);
     };
 
-    const advance = (delta: number) => {
-      if (navigatedRef.current) return;
-      if (armed) {
-        bumpLull(); // still moving, so the gesture is still going
-        return;
+    const measure = () => {
+      frame = 0;
+      const rect = el.getBoundingClientRect();
+
+      // The panel is fully uncovered once the curtain's top edge reaches the
+      // top of the screen; everything past that is the track.
+      const full = rect.top <= 1;
+      if (full !== readyRef.current) {
+        readyRef.current = full;
+        setReady(full);
       }
-      if (!readyRef.current) return;
-      // The site menu can be open over a page that is already scrolled to the
-      // bottom. Scrolling then belongs to the menu, not to the curtain — without
-      // this, dismissing it with a scroll would fling the reader to the next page.
-      if (document.querySelector('[aria-modal="true"]')) return;
-      window.clearTimeout(decay);
-      // Scrolling back up unwinds the gesture faster than it built up, so a
-      // reader who changes their mind is not left hovering near the trigger.
-      setPush(pushRef.current + (delta > 0 ? delta : delta * 2));
-      if (pushRef.current >= THRESHOLD) {
+
+      // -rect.top is how far into the wrapper the reader has scrolled, and the
+      // track is whatever of it does not fit on screen. At the foot of the
+      // document those are equal — no matter what iOS is doing with its
+      // toolbars, since the viewport term cancels.
+      //
+      // Short by SLACK so the track ends a couple of pixels before the document
+      // does. rect.top is fractional while offsetHeight and innerHeight are
+      // whole, so the honest sum lands on 0.999 at the bottom and the hand-over
+      // would simply never arm. Two pixels early is invisible and always true.
+      const travel = Math.max(1, el.offsetHeight - window.innerHeight - SLACK);
+      const progress = clamp01(-rect.top / travel);
+
+      // Written straight to the DOM: this runs on every scroll frame, and
+      // re-rendering the tree that often is both wasteful and janky.
+      if (barRef.current) barRef.current.style.width = `${progress * 100}%`;
+
+      if (progress >= 1) {
         armed = true;
-        bumpLull();
-        return;
+        settle();
+      } else if (armed) {
+        // Scrolled back off the end — the reader changed their mind.
+        armed = false;
+        window.clearTimeout(quiet);
       }
-      decay = window.setTimeout(() => setPush(0), DECAY_MS);
     };
 
-    const onWheel = (e: WheelEvent) => advance(e.deltaY);
-
-    let touchY = 0;
-    const onTouchStart = (e: TouchEvent) => {
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(measure);
+    };
+    const onTouchStart = () => {
       touching = true;
-      touchY = e.touches[0].clientY;
-    };
-    const onTouchMove = (e: TouchEvent) => {
-      const y = e.touches[0].clientY;
-      advance((touchY - y) * 2); // touch deltas are far smaller than wheel ones
-      touchY = y;
     };
     const onTouchEnd = () => {
       touching = false;
@@ -161,24 +140,19 @@ export function NextPageReveal({ href, label, eyebrow = "Next" }: NextPageReveal
     measure();
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onScroll);
-    window.addEventListener("wheel", onWheel, { passive: true });
     window.addEventListener("touchstart", onTouchStart, { passive: true });
-    window.addEventListener("touchmove", onTouchMove, { passive: true });
     window.addEventListener("touchend", onTouchEnd, { passive: true });
     window.addEventListener("touchcancel", onTouchEnd, { passive: true });
 
     return () => {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
-      window.removeEventListener("wheel", onWheel);
       window.removeEventListener("touchstart", onTouchStart);
-      window.removeEventListener("touchmove", onTouchMove);
       window.removeEventListener("touchend", onTouchEnd);
       window.removeEventListener("touchcancel", onTouchEnd);
       if (frame) cancelAnimationFrame(frame);
-      window.clearTimeout(decay);
-      // An armed gesture that never completed must not fire into a page the
-      // reader has since left by some other route.
+      // A pending hand-over must not fire into a page the reader has since left
+      // by some other route.
       window.clearTimeout(quiet);
     };
   }, [href, router]);
@@ -186,15 +160,16 @@ export function NextPageReveal({ href, label, eyebrow = "Next" }: NextPageReveal
   return (
     <div
       ref={wrapperRef}
+      // One screen to uncover the panel, then three quarters of one more as the
+      // track the progress bar measures.
+      //
       // lvh, not svh, and not vh either. This box has to reach the top of the
-      // screen for the panel to count as open, and at the foot of the document
-      // its top sits at exactly (viewport height − its own height). Sized in
-      // svh that is a positive number for as long as iOS keeps its toolbars
-      // collapsed, so the curtain could not finish until the chrome happened to
-      // snap back — which is the jump. lvh is never shorter than the viewport,
-      // so the test passes in either state, and unlike dvh it does not resize
-      // mid-scroll while the toolbars animate.
-      className="relative h-lvh w-full"
+      // screen for the panel to count as open, and sized in svh its top sits
+      // below that for as long as iOS keeps its toolbars collapsed — so the
+      // curtain could not finish until the chrome happened to snap back, which
+      // is a lurch. lvh is never shorter than the viewport, and unlike dvh it
+      // does not resize mid-scroll while the toolbars animate.
+      className="relative h-[175lvh] w-full"
       // The clip is what makes this work — see the note above.
       style={{ clipPath: "polygon(0 0, 100% 0, 100% 100%, 0 100%)" }}
     >
@@ -218,8 +193,8 @@ export function NextPageReveal({ href, label, eyebrow = "Next" }: NextPageReveal
             {label}
           </span>
 
-          {/* The gesture's state, so the reader can see that pushing further is
-              doing something rather than jamming against the end of the page. */}
+          {/* Where the reader is along the track, so that carrying on reads as
+              progress towards something rather than jamming against the end. */}
           <div className="mt-6 flex flex-col items-center gap-3">
             <span
               className={`font-mono text-[10px] tracking-[0.2em] uppercase transition-colors duration-300 ${
@@ -234,10 +209,7 @@ export function NextPageReveal({ href, label, eyebrow = "Next" }: NextPageReveal
                 ready ? "opacity-100" : "opacity-0"
               }`}
             >
-              <div
-                className="h-full rounded-full bg-[#b60d06]"
-                style={{ width: `${progress * 100}%` }}
-              />
+              <div ref={barRef} className="h-full rounded-full bg-[#b60d06]" style={{ width: 0 }} />
             </div>
           </div>
         </Link>
