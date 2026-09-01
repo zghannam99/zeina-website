@@ -104,6 +104,9 @@ function BubbleBackground({
 }: BubbleBackgroundProps) {
   const [reducedMotion, setReducedMotion] = React.useState(false);
   const [finePointer, setFinePointer] = React.useState(false);
+  // Phones and tablets get a cheaper build of the same effect — see the note
+  // above the filter below.
+  const [lite, setLite] = React.useState(false);
 
   const pointerX = useMotionValue(0);
   const pointerY = useMotionValue(0);
@@ -119,6 +122,7 @@ function BubbleBackground({
     const apply = () => {
       setReducedMotion(motionMq.matches);
       setFinePointer(pointerMq.matches);
+      setLite(!pointerMq.matches);
     };
     apply();
     motionMq.addEventListener("change", apply);
@@ -189,11 +193,19 @@ function BubbleBackground({
           </defs>
         </svg>
 
+        {/* The goo filter is what fuses the bubbles into one another, and it is
+            also the single most expensive thing on the page. Anything animating
+            inside a filtered element makes the browser re-run that filter over
+            the whole surface every frame — and this surface is the height of
+            the entire document. Desktop GPUs shrug; phones stutter badly.
+            Touch devices therefore get the bare radial gradients, which are
+            soft enough on their own that at 16% opacity the difference is
+            barely visible. */}
         <div
           className="absolute inset-0"
-          style={{ filter: `url(#${gooId}) blur(30px)` }}
+          style={lite ? undefined : { filter: `url(#${gooId}) blur(30px)` }}
         >
-          {BUBBLES.map((b, i) => (
+          {(lite ? BUBBLES.slice(0, 4) : BUBBLES).map((b, i) => (
             <div
               key={i}
               className="absolute"
@@ -216,7 +228,7 @@ function BubbleBackground({
                 <motion.div
                   className="h-full w-full"
                   animate={
-                    reducedMotion
+                    reducedMotion || lite
                       ? undefined
                       : {
                           x: [0, b.drift[0], 0],

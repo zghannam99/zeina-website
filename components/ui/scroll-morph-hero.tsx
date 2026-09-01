@@ -226,6 +226,8 @@ interface FlipCardProps {
   introT: MotionValue<number>;
   morph: MotionValue<number>;
   shuffle: MotionValue<number>;
+  /** False on touch, where there is no hover to flip the card with. */
+  flippable: boolean;
 }
 
 // --- FlipCard ---
@@ -239,6 +241,7 @@ function FlipCard({
   introT,
   morph,
   shuffle,
+  flippable,
 }: FlipCardProps) {
   const [hovered, setHovered] = useState(false);
 
@@ -259,11 +262,16 @@ function FlipCard({
   return (
     <motion.div
       style={{
+        // The 3D context exists only to flip the card on hover. On a phone that
+        // never happens, and a perspective plus preserve-3d on twelve cards —
+        // each with a second nested 3D layer and a hidden back face — is a real
+        // cost for something the device cannot use.
+        ...(flippable
+          ? { transformStyle: "preserve-3d" as const, perspective: "1000px" }
+          : null),
         position: "absolute",
         width: IMG_WIDTH,
         height: IMG_HEIGHT,
-        transformStyle: "preserve-3d",
-        perspective: "1000px",
         x,
         y,
         rotate,
@@ -276,16 +284,16 @@ function FlipCard({
     >
       <motion.div
         className="relative h-full w-full"
-        style={{ transformStyle: "preserve-3d" }}
+        style={flippable ? { transformStyle: "preserve-3d" } : undefined}
         transition={{ duration: 0.6, type: "spring", stiffness: 260, damping: 20 }}
         // Driven by the parent's hover rather than the face's own, so an
         // overlaid link (once a card has an href) doesn't swallow the flip.
-        animate={{ rotateY: hovered ? 180 : 0 }}
+        animate={flippable ? { rotateY: hovered ? 180 : 0 } : undefined}
       >
         {/* Front */}
         <div
           className="absolute inset-0 h-full w-full overflow-hidden rounded-xl bg-[#e7ded2] shadow-[0_4px_14px_rgba(43,38,34,0.12)]"
-          style={{ backfaceVisibility: "hidden" }}
+          style={flippable ? { backfaceVisibility: "hidden" } : undefined}
         >
           <Image
             src={card.src}
@@ -303,7 +311,8 @@ function FlipCard({
           <div className="absolute inset-0 bg-[#2b2622]/10 transition-colors group-hover:bg-transparent" />
         </div>
 
-        {/* Back */}
+        {/* Back — only mounted where a hover can actually reveal it. */}
+        {flippable && (
         <div
           className="absolute inset-0 flex h-full w-full flex-col items-center justify-center overflow-hidden rounded-xl border border-[#4a423b] bg-[#2b2622] p-4 shadow-[0_4px_14px_rgba(43,38,34,0.18)]"
           style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
@@ -315,6 +324,7 @@ function FlipCard({
             <p className="text-xs font-medium text-[#fffdfa]">{card.label ?? "Details"}</p>
           </div>
         </div>
+        )}
       </motion.div>
 
       {/* Only a card with a destination becomes a link. Sits above both faces
@@ -334,6 +344,7 @@ function FlipCard({
 export default function IntroAnimation() {
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
   const [reducedMotion, setReducedMotion] = useState(false);
+  const [flippable, setFlippable] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const virtualScroll = useMotionValue(0);
@@ -343,10 +354,18 @@ export default function IntroAnimation() {
   // --- Reduced motion: skip the intro, park the arc, never trap the wheel ---
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const apply = () => setReducedMotion(mq.matches);
+    const hoverMq = window.matchMedia("(hover: hover) and (pointer: fine)");
+    const apply = () => {
+      setReducedMotion(mq.matches);
+      setFlippable(hoverMq.matches);
+    };
     apply();
     mq.addEventListener("change", apply);
-    return () => mq.removeEventListener("change", apply);
+    hoverMq.addEventListener("change", apply);
+    return () => {
+      mq.removeEventListener("change", apply);
+      hoverMq.removeEventListener("change", apply);
+    };
   }, []);
 
   // --- Container size ---
@@ -589,6 +608,7 @@ export default function IntroAnimation() {
               introT={introT}
               morph={morph}
               shuffle={shuffle}
+              flippable={flippable}
             />
           ))}
         </motion.div>
