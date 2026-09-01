@@ -1,0 +1,73 @@
+@import "tailwindcss";
+
+/* Warm-minimal palette. Light only — the scaffold's prefers-color-scheme
+   block would have flipped the page dark underneath it on any machine set
+   to dark mode. */
+:root {
+  --background: #f7f3ee; /* warm paper */
+  --foreground: #2b2622; /* ink */
+  --muted: #8a8179; /* secondary text */
+  --rule: #e7ded2; /* hairlines and borders */
+  --accent: #b60d06; /* the telephone red */
+  --accent-wash: rgba(182, 13, 6, 0.07);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-rule: var(--rule);
+  --color-accent: var(--accent);
+  --font-sans: var(--font-outfit);
+  --font-serif: var(--font-instrument), Georgia, serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+}
+
+/* --- Ledger Numeral navigation cards -------------------------------------
+   The hover state lives here rather than in Tailwind utilities so the two
+   properties can carry different easings, and so hover, :focus-visible and
+   the touch "lifted" state resolve to exactly one visual result. */
+.ledger-card {
+  box-shadow: 0 12px 24px -18px rgba(60, 20, 14, 0.5);
+  transition:
+    transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 0.4s ease;
+}
+
+.ledger-card:hover,
+.ledger-card:focus-visible,
+.ledger-card[data-lifted="true"] {
+  /* Up and to the LEFT — the card slides off its sleeve to reveal more of it. */
+  transform: translate(-8px, -8px);
+  box-shadow: 0 26px 38px -20px rgba(60, 20, 14, 0.55);
+}
+
+@media (min-width: 640px) {
+  .ledger-card:hover,
+  .ledger-card:focus-visible,
+  .ledger-card[data-lifted="true"] {
+    transform: translate(-14px, -14px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ledger-card,
+  .ledger-card:hover,
+  .ledger-card:focus-visible,
+  .ledger-card[data-lifted="true"] {
+    transform: none;
+  }
+}
+
+html {
+  /* The hero owns the wheel while it's forming; this stops the
+     browser's rubber-band from fighting it at the top of the page. */
+  overscroll-behavior-y: none;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
