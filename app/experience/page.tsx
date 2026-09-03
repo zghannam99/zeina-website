@@ -200,7 +200,7 @@ export default function ExperiencePage() {
           {/* Programs */}
           <div className="mt-16 md:mt-24">
             <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-[#8a8179]">
-              Programs I work in
+              Swipe to see the programs I use
             </p>
             {/* Drag it. The height is the only thing sizing the tiles — they
                 come out at 0.53 of it — so the two steps keep them from
