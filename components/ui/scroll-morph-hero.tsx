@@ -621,7 +621,7 @@ export default function IntroAnimation() {
           <div className="pointer-events-none absolute top-1/2 z-0 flex -translate-y-1/2 flex-col items-center justify-center text-center">
             <motion.h1
               style={{ opacity: headlineOpacity, filter: headlineBlur }}
-              className="text-2xl font-normal tracking-tight text-[#2b2622] md:text-4xl"
+              className="text-[1.6rem] font-normal tracking-tight text-[#2b2622] md:text-4xl"
             >
               See how I{" "}
               {/* Loop starts once the cards have settled into the circle. */}
@@ -636,7 +636,7 @@ export default function IntroAnimation() {
             </motion.h1>
             <motion.p
               style={{ opacity: cueOpacity }}
-              className="mt-5 rounded-full bg-[rgba(182,13,6,0.07)] px-4 py-[7px] text-[11px] font-medium tracking-[0.2em] text-[#b60d06]"
+              className="mt-7 rounded-full bg-[rgba(182,13,6,0.07)] px-3.5 py-[6px] text-[10px] font-medium tracking-[0.2em] text-[#b60d06] md:mt-5 md:px-4 md:py-[7px] md:text-[11px]"
             >
               SCROLL TO EXPLORE
             </motion.p>
@@ -648,7 +648,7 @@ export default function IntroAnimation() {
             <motion.div
               aria-hidden="true"
               style={{ opacity: cueOpacity }}
-              className="mt-4 text-[#b60d06]"
+              className="text-[#b60d06]"
               animate={reducedMotion ? undefined : { y: [0, 8, 0] }}
               transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
             >
