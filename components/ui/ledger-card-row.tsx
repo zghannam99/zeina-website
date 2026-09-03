@@ -4,6 +4,7 @@ import * as React from "react";
 import { motion } from "framer-motion";
 
 import { LedgerCard, type LedgerCardData } from "@/components/ui/ledger-card";
+import { useMediaQuery } from "@/lib/use-media-query";
 
 type RowCard = LedgerCardData & {
   /** Seconds for one float cycle — staggered so the cards drift out of sync. */
@@ -55,33 +56,20 @@ interface LedgerCardRowProps {
 export function LedgerCardRow({ float = true }: LedgerCardRowProps) {
   const [activeIndex, setActiveIndex] = React.useState<number | null>(null);
   const [hoveredIndex, setHoveredIndex] = React.useState<number | null>(null);
-  const [scrollDriven, setScrollDriven] = React.useState(false);
-  const [reducedMotion, setReducedMotion] = React.useState(false);
   const cardRefs = React.useRef<(HTMLDivElement | null)[]>([]);
 
-  React.useEffect(() => {
-    const noHover = window.matchMedia("(hover: none)");
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const apply = () => {
-      setReducedMotion(reduced.matches);
-      setScrollDriven(noHover.matches && !reduced.matches);
-    };
-    apply();
-    noHover.addEventListener("change", apply);
-    reduced.addEventListener("change", apply);
-    return () => {
-      noHover.removeEventListener("change", apply);
-      reduced.removeEventListener("change", apply);
-    };
-  }, []);
+  const noHover = useMediaQuery("(hover: none)");
+  const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
+  const scrollDriven = noHover && !reducedMotion;
+  // Only the scroll-driven mode sets an active card, so a pointer coming back
+  // retires the last one by derivation — clearing the state from an effect is
+  // what the old version did, and it is a render nobody needed.
+  const active = scrollDriven ? activeIndex : null;
 
   // On touch there is no hover, so a card lifts while it crosses the middle of
   // the screen — the same visual state a pointer produces.
   React.useEffect(() => {
-    if (!scrollDriven) {
-      setActiveIndex(null);
-      return;
-    }
+    if (!scrollDriven) return;
     const els = cardRefs.current.filter(Boolean) as HTMLDivElement[];
     if (els.length === 0) return;
 
@@ -112,7 +100,7 @@ export function LedgerCardRow({ float = true }: LedgerCardRowProps) {
           and hover moves it another 14px. */}
       <div className="flex flex-col items-center justify-center gap-16 py-14 sm:flex-row sm:gap-[56px] lg:gap-[72px]">
         {CARDS.map(({ floatDuration, floatDelay, ...card }, idx) => {
-          const isActive = activeIndex === idx;
+          const isActive = active === idx;
           const isHovered = hoveredIndex === idx;
           const settled = isActive || isHovered || reducedMotion || !float;
 

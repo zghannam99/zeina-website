@@ -80,6 +80,19 @@ const HERO_IMAGES: HeroCard[] = [
 const TOTAL_IMAGES = HERO_IMAGES.length;
 
 const lerp = (start: number, end: number, t: number) => start * (1 - t) + end * t;
+
+/** Deterministic stand-in for Math.random, seeded by card and axis.
+ *
+ *  The scatter only has to look arbitrary; it does not have to be
+ *  unpredictable. Math.random during render gives the server and the client
+ *  different answers for the same card, which is a hydration mismatch sitting
+ *  there waiting to be noticed — and it is impure in a render path besides. */
+const noise = (index: number, axis: number) => {
+  let t = ((index * 3 + axis) * 0x6d2b79f5) | 0;
+  t = Math.imul(t ^ (t >>> 15), 1 | t);
+  t ^= t + Math.imul(t ^ (t >>> 7), 61 | t);
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+};
 const clamp = (v: number, min: number, max: number) => Math.min(Math.max(v, min), max);
 
 type Pose = { x: number; y: number; rotation: number; scale: number; opacity: number };
@@ -582,13 +595,14 @@ export default function IntroAnimation() {
   // applied once here instead of inside twelve per-frame pose calculations.
   const parallaxX = useTransform([parallax, morph], (v: number[]) => v[0] * v[1]);
 
-  // Fixed per card, and stable across renders.
+  // Fixed per card, stable across renders — and now identical on the server
+  // and the client.
   const scatterPositions = useMemo<Scatter[]>(
     () =>
-      HERO_IMAGES.map(() => ({
-        x: (Math.random() - 0.5) * 1500,
-        y: (Math.random() - 0.5) * 1000,
-        rotation: (Math.random() - 0.5) * 180,
+      HERO_IMAGES.map((_, i) => ({
+        x: (noise(i, 1) - 0.5) * 1500,
+        y: (noise(i, 2) - 0.5) * 1000,
+        rotation: (noise(i, 3) - 0.5) * 180,
       })),
     []
   );
