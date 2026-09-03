@@ -144,7 +144,7 @@ export default function ExperiencePage() {
           {/* Six years */}
           <div className="mt-16 grid gap-8 md:mt-24 md:grid-cols-[150px_1fr] md:gap-14">
             <p className="pt-2 text-[11px] font-medium uppercase tracking-[0.2em] text-[#8a8179]">
-              During those six years
+              During those six years, I:
             </p>
             <div className="flex max-w-[700px] flex-col">
               {SIX_YEARS.map((item) => (
