@@ -62,9 +62,13 @@ export default function AboutPage() {
           <div className="mt-16 max-w-[700px] md:mt-24">
             <p className="mb-7 text-lg leading-[1.75] text-[#2b2622] md:text-xl">
               I graduated from the University of Sussex in the UK with a{" "}
-              <CountUp to={4} decimals={1} className="font-medium text-[#b60d06]" /> GPA
-              in Sociology, a degree built entirely around understanding why people
-              actually behave the way they do, and how to prove it rather than assume it.
+              <CountUp to={4} decimals={1} /> GPA in Sociology, a degree built entirely
+              around understanding{" "}
+              {/* The two questions the degree is actually about, so they carry the
+                  accent rather than the grade. */}
+              <em className="not-italic text-[#b60d06]">why</em> people actually behave the
+              way they do, and <em className="not-italic text-[#b60d06]">how</em> to prove
+              it rather than assume it.
             </p>
             <p className="mb-7 text-lg leading-[1.75] text-[#2b2622] md:text-xl">
               That instinct has shaped every role I&rsquo;ve had since, where I start with
