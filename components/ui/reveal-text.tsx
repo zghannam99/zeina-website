@@ -11,6 +11,38 @@ interface RevealTextProps {
   delay?: number;
   /** Seconds between one line and the next. */
   stagger?: number;
+  /** A word to lift out of the text, styled by `accentClassName`. Only the
+   *  first occurrence takes it — a name repeated inside one paragraph reads as
+   *  emphasis the first time and as noise every time after. */
+  accent?: string;
+  accentClassName?: string;
+}
+
+/** Splits the measured lines around the first occurrence of `accent`.
+ *
+ *  Lines are plain strings by the time they get here, which is the whole reason
+ *  this exists: the text is split on whitespace and reassembled, so markup
+ *  handed in as children would not survive the measuring pass. */
+function withAccent(
+  lines: string[],
+  accent: string | undefined,
+  accentClassName: string | undefined
+): React.ReactNode[][] {
+  if (!accent) return lines.map((line) => [line]);
+  let taken = false;
+  return lines.map((line) => {
+    if (taken) return [line];
+    const at = line.indexOf(accent);
+    if (at === -1) return [line];
+    taken = true;
+    return [
+      line.slice(0, at),
+      <span key="accent" className={accentClassName}>
+        {accent}
+      </span>,
+      line.slice(at + accent.length),
+    ];
+  });
 }
 
 /**
@@ -25,6 +57,8 @@ export function RevealText({
   className,
   delay = 0,
   stagger = 0.09,
+  accent,
+  accentClassName,
 }: RevealTextProps) {
   const hostRef = React.useRef<HTMLSpanElement>(null);
   const [lines, setLines] = React.useState<string[] | null>(null);
@@ -108,7 +142,7 @@ export function RevealText({
         // Reserve the right height before measuring, so nothing jumps.
         <span style={{ visibility: "hidden" }}>{text}</span>
       ) : (
-        lines.map((line, i) => (
+        withAccent(lines, accent, accentClassName).map((line, i) => (
           <span key={i} style={{ display: "block", overflow: "hidden" }}>
             <motion.span
               style={{ display: "block", willChange: "transform" }}

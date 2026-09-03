@@ -144,16 +144,16 @@ export default function ExperiencePage() {
           {/* Lead */}
           <div className="max-w-[820px]">
             <p className="font-serif text-[1.9rem] leading-[1.22] text-[#2b2622] md:text-[2.7rem]">
-              <RevealText text="Right now, I'm working on a project with social media app BeReal, where I work as a product manager, mapping the end-to-end user journey, benchmarking BeReal against its competitors, and designing and prototyping a new feature to solve a specific problem — then validating it through focus group testing." />
+              <RevealText
+                text="Right now, I'm working on a project with social media app BeReal, where I work as a product manager, mapping the end-to-end user journey, benchmarking BeReal against its competitors, and designing and prototyping a new feature to solve a specific problem — then validating it through focus group testing."
+                accent="BeReal"
+                accentClassName="text-[#b60d06]"
+              />
             </p>
             <p className="mt-8 text-lg leading-[1.75] text-[#2b2622] md:text-xl">
-              Before{" "}
-              <em className="font-serif text-xl not-italic text-[#b60d06] md:text-2xl">
-                BeReal
-              </em>
-              , six years across several industries gave me the foundation I now bring to
-              product &mdash; discovering real problems, deciding what to build, and
-              delivering it with the right teams.
+              Before BeReal, six years across several industries gave me the foundation I
+              now bring to product &mdash; discovering real problems, deciding what to
+              build, and delivering it with the right teams.
             </p>
           </div>
 
