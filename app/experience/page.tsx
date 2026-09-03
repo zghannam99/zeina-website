@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowUpRight, Download } from "lucide-react";
@@ -15,7 +16,7 @@ import { cn } from "@/lib/utils";
 export const metadata: Metadata = {
   title: "Experience — Zeina Ghannam",
   description:
-    "Six years across research, project management and strategy — field discovery, measurement frameworks, and delivery under real constraints.",
+    "Product management with BeReal, and six years before it — 0-to-1 internal product definition, FMCG go-to-market and pricing, health program strategy, and a shipped app of my own.",
 };
 
 const TRAIL_SRCS = ["/trail/1.png", "/trail/2.png", "/trail/3.png", "/trail/4.png", "/trail/5.png", "/trail/6.png"];
@@ -27,6 +28,78 @@ const trailItems = TRAIL_SRCS.map((src) => (
 
 const PILL =
   "group relative h-12 w-fit overflow-hidden rounded-full p-1 ps-6 pe-14 text-sm font-medium transition-all duration-500 hover:ps-14 hover:pe-6";
+
+/** The six years, as four things that happened rather than four job titles.
+ *  Bodies are JSX because two of them carry a rolling figure and a link. */
+const SIX_YEARS: {
+  numeral: string;
+  heading: string;
+  body: ReactNode;
+  skills: string;
+}[] = [
+  {
+    numeral: "i",
+    heading: "Owned the business side of a 0-to-1 internal product.",
+    body: (
+      <>
+        At a financial institution, I led the business definition of a new internal B2B
+        tool that replaced manual KPI collection with an automated tracker &mdash; routed
+        requests, reminders, role-based access, and executive reporting for leadership and
+        the board of directors. I coordinated directly with engineering and
+        data-visualization teams to build it.
+      </>
+    ),
+    skills: "0-to-1 product definition and cross-functional delivery with a technical team.",
+  },
+  {
+    numeral: "ii",
+    heading: "Advised FMCG clients on how to bring new products to market.",
+    body: (
+      <>
+        As a consultant, I worked with fast-moving consumer goods companies on go-to-market
+        and pricing strategy for product launches &mdash; setting pricing in line with
+        their intended brand positioning and building competitor analyses to find where
+        they could stand apart.
+      </>
+    ),
+    skills: "Commercial strategy, competitive analysis, and pricing — the business side of product.",
+  },
+  {
+    numeral: "iii",
+    heading: "Redirected the strategy of a 4,000-user health program.",
+    body: (
+      <>
+        In a program delivering health services to 4,000 users, my field research and needs
+        assessments surfaced a user segment the strategy had missed. I proposed and drove an
+        expansion of the program&rsquo;s scope to reach them, backing the decision with both
+        qualitative and quantitative evidence.
+      </>
+    ),
+    skills: "User discovery that changed direction, and evidence-based decision-making at scale.",
+  },
+  {
+    numeral: "iv",
+    heading: "Found a problem, built an app to solve it, and shipped it.",
+    body: (
+      <>
+        People kept reordering medications they already owned &mdash; their cabinets were
+        disorganized, so they couldn&rsquo;t see their own stock. I built and shipped a web
+        app that makes household medication visible before someone is about to purchase the
+        new medication. So far, the app has helped users avoid purchasing{" "}
+        <CountUp to={90.9} decimals={1} suffix="%" className="font-medium text-[#b60d06]" />{" "}
+        of the medications they considered purchasing.{" "}
+        <Link
+          href="/projects/find-my-meds"
+          className="italic underline decoration-[#cdbfae] underline-offset-4 transition-colors hover:text-[#b60d06] hover:decoration-[#b60d06]"
+        >
+          (Full case study.)
+        </Link>
+      </>
+    ),
+    skills:
+      "End-to-end product ownership: problem discovery, design, build, and measurable behavior change.",
+  },
+];
 
 export default function ExperiencePage() {
   return (
@@ -55,100 +128,63 @@ export default function ExperiencePage() {
           {/* Lead */}
           <div className="max-w-[820px]">
             <p className="font-serif text-[1.9rem] leading-[1.22] text-[#2b2622] md:text-[2.7rem]">
-              <RevealText text="I graduated from the University of Sussex in the UK with a degree in Sociology, a degree built entirely around understanding why people actually behave the way they do, and how to prove it rather than assume it." />
+              <RevealText text="Right now, I'm working on a project with social media app BeReal, where I work as a product manager, mapping the end-to-end user journey, benchmarking BeReal against its competitors, and designing and prototyping a new feature to solve a specific problem — then validating it through focus group testing." />
             </p>
             <p className="mt-8 text-lg leading-[1.75] text-[#2b2622] md:text-xl">
-              That instinct has shaped every role I&rsquo;ve had since: start with research,
-              let evidence decide what&rsquo;s worth doing, then execute inside real
-              constraints of time, budget, and people.
+              Before{" "}
+              <em className="font-serif text-xl not-italic text-[#b60d06] md:text-2xl">
+                BeReal
+              </em>
+              , six years across several industries gave me the foundation I now bring to
+              product &mdash; discovering real problems, deciding what to build, and
+              delivering it with the right teams.
             </p>
           </div>
 
           {/* Six years */}
           <div className="mt-16 grid gap-8 md:mt-24 md:grid-cols-[150px_1fr] md:gap-14">
             <p className="pt-2 text-[11px] font-medium uppercase tracking-[0.2em] text-[#8a8179]">
-              Over six years
+              During those six years
             </p>
             <div className="flex max-w-[700px] flex-col">
-              <p className="mb-6 text-lg leading-[1.75] text-[#2b2622] md:text-xl">
-                That&rsquo;s taken different shapes.
-              </p>
-
-              <div className="flex items-baseline gap-6 border-b border-[#e7ded2] py-5">
-                <span className="w-11 flex-shrink-0 font-serif text-2xl text-[#cdbfae]">i</span>
-                <span className="text-base leading-[1.6] text-[#2b2622] md:text-lg">
-                  I&rsquo;ve run field discovery that redirected program strategy toward a
-                  segment that we originally weren&rsquo;t planned to serve
-                </span>
-              </div>
-              <div className="flex items-baseline gap-6 border-b border-[#e7ded2] py-5">
-                <span className="w-11 flex-shrink-0 font-serif text-2xl text-[#cdbfae]">ii</span>
-                <span className="text-base leading-[1.6] text-[#2b2622] md:text-lg">
-                  I&rsquo;ve designed measurement frameworks to prove &mdash; not assume
-                  &mdash; whether an intervention actually worked
-                </span>
-              </div>
-              <div className="flex items-baseline gap-6 border-b border-[#e7ded2] py-5">
-                <span className="w-11 flex-shrink-0 font-serif text-2xl text-[#cdbfae]">iii</span>
-                <span className="text-base leading-[1.6] text-[#2b2622] md:text-lg">
-                  I&rsquo;ve caught vendor-reported data that was inflated by{" "}
-                  <CountUp
-                    to={3.4}
-                    decimals={1}
-                    suffix="×"
-                    className="font-medium text-[#b60d06]"
-                  />{" "}
-                  before it could shape a client&rsquo;s spend decisions
-                </span>
-              </div>
-              <div className="flex items-baseline gap-6 border-b border-[#e7ded2] py-5">
-                <span className="w-11 flex-shrink-0 font-serif text-2xl text-[#cdbfae]">iv</span>
-                <span className="text-base leading-[1.6] text-[#2b2622] md:text-lg">
-                  And I&rsquo;ve managed cross-functional teams and external partners
-                  &mdash; government bodies, agencies, engineers, designers &mdash;
-                  delivering programs on tight budgets and timelines
-                </span>
-              </div>
+              {SIX_YEARS.map((item) => (
+                <div
+                  key={item.numeral}
+                  className="flex items-baseline gap-6 border-b border-[#e7ded2] py-7"
+                >
+                  <span className="w-11 flex-shrink-0 font-serif text-2xl text-[#cdbfae]">
+                    {item.numeral}
+                  </span>
+                  <div>
+                    <h3 className="text-base font-medium leading-[1.45] text-[#2b2622] md:text-lg">
+                      {item.heading}
+                    </h3>
+                    <p className="mt-3 text-base leading-[1.6] text-[#2b2622] md:text-lg">
+                      {item.body}
+                    </p>
+                    {/* What the story is evidence of, called out rather than left
+                        for the reader to infer. */}
+                    <p className="mt-4 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                      <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-[#8a8179]">
+                        Skills used
+                      </span>
+                      <span aria-hidden="true" className="text-[#cdbfae]">
+                        &rarr;
+                      </span>
+                      <span className="text-[15px] font-medium leading-[1.5] text-[#b60d06]">
+                        {item.skills}
+                      </span>
+                    </p>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
-
-          {/* Most recently */}
-          <div className="mt-16 grid gap-8 md:mt-24 md:grid-cols-[150px_1fr] md:gap-14">
-            <p className="pt-2 text-[11px] font-medium uppercase tracking-[0.2em] text-[#8a8179]">
-              Most recently
-            </p>
-            <p className="max-w-[700px] text-lg leading-[1.75] text-[#2b2622] md:text-xl">
-              That same approach took product form: a short-term project with{" "}
-              <em className="font-serif text-xl not-italic text-[#b60d06] md:text-2xl">
-                BeReal
-              </em>
-              , where I owned the process end-to-end &mdash; mapping the user journey,
-              benchmarking competitors, and designing and prototyping a new feature,
-              validated through focus group testing.
-            </p>
-          </div>
-
-          {/* Thesis */}
-          <div className="mt-16 border-y border-[#e7ded2] py-12 md:mt-24 md:py-14">
-            <div className="mx-auto max-w-[880px] text-center font-serif text-[1.7rem] leading-[1.28] text-[#b60d06] md:text-[2.5rem]">
-              <RevealText
-                text="What ties it together isn't the industry — I've worked in projects from FMCG to healthcare — it's identifying what's the real problem, what's actually worth building, what should we deliberately leave out, and how will we know if it worked."
-                stagger={0.07}
-              />
-            </div>
-          </div>
-
-          <p className="mt-16 max-w-[820px] font-serif text-[1.6rem] leading-[1.3] text-[#2b2622] md:mt-24 md:text-[2.4rem]">
-            That&rsquo;s the layer product management lives in, and it&rsquo;s{" "}
-            <em className="italic text-[#b60d06]">
-              the part of every job I&rsquo;ve had that I&rsquo;ve cared about most.
-            </em>
-          </p>
 
           {/* CV */}
           <div className="mt-16 border-t border-[#e7ded2] pt-12 md:mt-24">
             <p className="mb-8 text-lg leading-[1.75] text-[#8a8179]">
-              Full role-by-role history is in my CV.
+              For more info on my experience, you can download my CV from below.
             </p>
             <div className="flex flex-wrap items-center gap-4">
               <Button
