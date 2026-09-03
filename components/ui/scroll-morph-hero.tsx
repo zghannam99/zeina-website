@@ -123,7 +123,11 @@ function computeLayout(size: Size): Layout {
 
   const gap = Math.min(70, (size.width - IMG_WIDTH - 32) / (TOTAL_IMAGES - 1));
   const minDimension = Math.min(size.width, size.height);
-  const circleRadius = Math.min(minDimension * 0.35, 350);
+  // Wider on a phone, where the ring's inside is the only room the headline
+  // has. At 0.37 the outermost cards stop about six pixels from a 375px screen
+  // — as far out as they can go — which buys the text the clearance it needs.
+  // Desktop measures against height and has room to spare, so it keeps 0.35.
+  const circleRadius = Math.min(minDimension * (isMobile ? 0.37 : 0.35), 350);
 
   const cardScale = isMobile ? 1.4 : 1.8;
   const nominalSpread = isMobile ? 100 : 130;
@@ -621,7 +625,7 @@ export default function IntroAnimation() {
           <div className="pointer-events-none absolute top-1/2 z-0 flex -translate-y-1/2 flex-col items-center justify-center text-center">
             <motion.h1
               style={{ opacity: headlineOpacity, filter: headlineBlur }}
-              className="text-[1.6rem] font-normal tracking-tight text-[#2b2622] md:text-4xl"
+              className="text-[1.5rem] font-normal tracking-tight text-[#2b2622] md:text-4xl"
             >
               See how I{" "}
               {/* Loop starts once the cards have settled into the circle. */}
@@ -636,7 +640,7 @@ export default function IntroAnimation() {
             </motion.h1>
             <motion.p
               style={{ opacity: cueOpacity }}
-              className="mt-7 rounded-full bg-[rgba(182,13,6,0.07)] px-3.5 py-[6px] text-[10px] font-medium tracking-[0.2em] text-[#b60d06] md:mt-5 md:px-4 md:py-[7px] md:text-[11px]"
+              className="mt-6 rounded-full bg-[rgba(182,13,6,0.07)] px-3.5 py-[6px] text-[10px] font-medium tracking-[0.2em] text-[#b60d06] md:mt-5 md:px-4 md:py-[7px] md:text-[11px]"
             >
               SCROLL TO EXPLORE
             </motion.p>
@@ -648,14 +652,14 @@ export default function IntroAnimation() {
             <motion.div
               aria-hidden="true"
               style={{ opacity: cueOpacity }}
-              className="text-[#b60d06]"
+              className="mt-2 text-[#b60d06]"
               animate={reducedMotion ? undefined : { y: [0, 8, 0] }}
               transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
             >
               {/* Sized and weighted to survive a phone screen. At 16px and a
                   hairline stroke this was technically on the page and, at arm's
                   length, invisible. */}
-              <ArrowDown size={26} strokeWidth={2} />
+              <ArrowDown className="h-5 w-5 md:h-[26px] md:w-[26px]" strokeWidth={2} />
             </motion.div>
           </div>
 
