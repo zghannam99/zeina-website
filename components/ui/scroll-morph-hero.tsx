@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { ArrowDown } from "lucide-react";
 import {
   motion,
   useTransform,
@@ -639,6 +640,23 @@ export default function IntroAnimation() {
             >
               SCROLL TO EXPLORE
             </motion.p>
+
+            {/* Decorative: the line above already says it. Rides the same fade as
+                the cue, so it leaves with the rest of the intro copy as the arc
+                forms — the nudge is only honest while there is still something
+                to scroll to. */}
+            <motion.div
+              aria-hidden="true"
+              style={{ opacity: cueOpacity }}
+              className="mt-4 text-[#b60d06]"
+              animate={reducedMotion ? undefined : { y: [0, 8, 0] }}
+              transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+            >
+              {/* Sized and weighted to survive a phone screen. At 16px and a
+                  hairline stroke this was technically on the page and, at arm's
+                  length, invisible. */}
+              <ArrowDown size={26} strokeWidth={2} />
+            </motion.div>
           </div>
 
           {/* Cards. The mouse parallax rides on this wrapper — one transform for
