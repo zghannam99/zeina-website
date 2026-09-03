@@ -11,6 +11,7 @@ import { RevealText } from "@/components/ui/reveal-text";
 import { CountUp } from "@/components/ui/count-up";
 import { FillText } from "@/components/ui/motion-fill-text";
 import { NextPageReveal } from "@/components/ui/next-page-reveal";
+import { CircularGallery, type GalleryItem } from "@/components/ui/circular-gallery";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
@@ -28,6 +29,21 @@ const trailItems = TRAIL_SRCS.map((src) => (
 
 const PILL =
   "group relative h-12 w-fit overflow-hidden rounded-full p-1 ps-6 pe-14 text-sm font-medium transition-all duration-500 hover:ps-14 hover:pe-6";
+
+/** Named as the marks themselves are. Files are 700x900 on the page cream;
+ *  the square frame crops to their middle, which every logo sits well inside. */
+const PROGRAMS: GalleryItem[] = [
+  { image: "/experience/1.png", text: "Claude Code" },
+  { image: "/experience/2.png", text: "Mixpanel" },
+  { image: "/experience/3.png", text: "SQLite" },
+  { image: "/experience/4.png", text: "Asana" },
+  { image: "/experience/5.png", text: "Canva" },
+  { image: "/experience/6.png", text: "Glide" },
+  { image: "/experience/7.png", text: "Claude Design" },
+  { image: "/experience/8.png", text: "Lovable" },
+  { image: "/experience/9.png", text: "IBM SPSS" },
+  { image: "/experience/10.png", text: "Power BI" },
+];
 
 /** The six years, as four things that happened rather than four job titles.
  *  Bodies are JSX because two of them carry a rolling figure and a link. */
@@ -178,6 +194,19 @@ export default function ExperiencePage() {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+
+          {/* Programs */}
+          <div className="mt-16 md:mt-24">
+            <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-[#8a8179]">
+              Programs I work in
+            </p>
+            {/* Drag it. The height is the only thing sizing the tiles — they
+                come out at 0.53 of it — so the two steps keep them from
+                swallowing a phone screen. */}
+            <div className="mt-8 h-[340px] w-full md:h-[420px]">
+              <CircularGallery items={PROGRAMS} />
             </div>
           </div>
 
