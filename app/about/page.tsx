@@ -12,7 +12,7 @@ import { NextPageReveal } from "@/components/ui/next-page-reveal";
 export const metadata: Metadata = {
   title: "About — Zeina Ghannam",
   description:
-    "Business management consultant transitioning into product management. Sociology at Sussex, six years of research, strategy and delivery, and the move onto technical products.",
+    "Business professional with experience in product management, business consulting and project management. Sociology at Sussex, six years of research, strategy and delivery, and the move onto technical products.",
 };
 
 // Illustrations that follow the cursor. Sourced from public/trail/, with their
@@ -54,7 +54,7 @@ export default function AboutPage() {
               Hi, I&rsquo;m Zeina.
             </p>
             <h2 className="font-serif text-[2.6rem] leading-[1.04] tracking-[-0.015em] text-[#2b2622] md:text-[4.6rem]">
-              <RevealText text="A business management consultant transitioning into product management." />
+              <RevealText text="A business professional with experience in product management, business consulting and project management." />
             </h2>
           </div>
 
