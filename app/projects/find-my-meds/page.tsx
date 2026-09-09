@@ -231,7 +231,11 @@ const DATA: TimelineEntry[] = [
             />
           </div>
 
-          <div className="flex flex-wrap gap-10 pt-2">
+          {/* Stacked, not side by side. Two phones playing at once on a desktop
+              is two things asking to be watched and neither of them winning;
+              in a column the search plays first and the detail view follows it.
+              items-start so each figure keeps its own width in the column. */}
+          <div className="flex flex-col items-start gap-10 pt-2">
             <PhoneFrame
               src="/find-my-meds/X1.mp4"
               caption="Searching for medication"
