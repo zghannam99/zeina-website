@@ -93,11 +93,11 @@ export default function AboutPage() {
 
           {/* Close */}
           <p className="mt-16 max-w-[820px] font-serif text-[1.6rem] leading-[1.3] text-[#2b2622] md:mt-24 md:text-[2.4rem]">
-            My recent projects have put me directly on technical products, and I&rsquo;m now
-            moving into product management &mdash;{" "}
+            My recent projects have allowed me to tap into technicalities in the product
+            management field which showed me the importance of having multiple stakeholders
+            (commercial, technical, and user side) sit at a table{" "}
             <em className="italic text-[#b60d06]">
-              to work where the commercial, technical, and user sides of a problem meet and
-              have to be solved together.
+              to solve one common challenge holistically.
             </em>
           </p>
 
