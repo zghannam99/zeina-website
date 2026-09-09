@@ -16,6 +16,8 @@ interface RevealTextProps {
    *  emphasis the first time and as noise every time after. */
   accent?: string;
   accentClassName?: string;
+  /** Turns the accent into an external link. */
+  accentHref?: string;
 }
 
 /** Splits the measured lines around the first occurrence of `accent`.
@@ -26,7 +28,8 @@ interface RevealTextProps {
 function withAccent(
   lines: string[],
   accent: string | undefined,
-  accentClassName: string | undefined
+  accentClassName: string | undefined,
+  accentHref: string | undefined
 ): React.ReactNode[][] {
   if (!accent) return lines.map((line) => [line]);
   let taken = false;
@@ -35,13 +38,22 @@ function withAccent(
     const at = line.indexOf(accent);
     if (at === -1) return [line];
     taken = true;
-    return [
-      line.slice(0, at),
+    const mark = accentHref ? (
+      <a
+        key="accent"
+        href={accentHref}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={accentClassName}
+      >
+        {accent}
+      </a>
+    ) : (
       <span key="accent" className={accentClassName}>
         {accent}
-      </span>,
-      line.slice(at + accent.length),
-    ];
+      </span>
+    );
+    return [line.slice(0, at), mark, line.slice(at + accent.length)];
   });
 }
 
@@ -59,6 +71,7 @@ export function RevealText({
   stagger = 0.09,
   accent,
   accentClassName,
+  accentHref,
 }: RevealTextProps) {
   const hostRef = React.useRef<HTMLSpanElement>(null);
   const [lines, setLines] = React.useState<string[] | null>(null);
@@ -142,7 +155,7 @@ export function RevealText({
         // Reserve the right height before measuring, so nothing jumps.
         <span style={{ visibility: "hidden" }}>{text}</span>
       ) : (
-        withAccent(lines, accent, accentClassName).map((line, i) => (
+        withAccent(lines, accent, accentClassName, accentHref).map((line, i) => (
           <span key={i} style={{ display: "block", overflow: "hidden" }}>
             <motion.span
               style={{ display: "block", willChange: "transform" }}

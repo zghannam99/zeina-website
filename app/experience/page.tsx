@@ -147,7 +147,11 @@ export default function ExperiencePage() {
               <RevealText
                 text="Right now, I'm working on a project with social media app BeReal, where I work as a product manager, mapping the end-to-end user journey, benchmarking BeReal against its competitors, and designing and prototyping a new feature to solve a specific problem — then validating it through focus group testing."
                 accent="BeReal"
-                accentClassName="text-[#b60d06]"
+                accentHref="https://bereal.com/"
+                // Underlined, faintly, because a reader has to be able to tell
+                // this one is a link — being red is what the site does for
+                // emphasis everywhere else. It firms up to the accent on hover.
+                accentClassName="text-[#b60d06] underline decoration-[#e3d9cc] underline-offset-[6px] transition-colors duration-300 hover:text-[#8a0a04] hover:decoration-[#8a0a04]"
               />
             </p>
             <p className="mt-8 text-lg leading-[1.75] text-[#2b2622] md:text-xl">
